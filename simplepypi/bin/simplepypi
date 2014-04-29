@@ -9,6 +9,8 @@ from twisted.web.static import File
 
 import txroutes
 
+from distutils.version import LooseVersion
+
 
 def return404(request):
     request.setResponseCode(404)
@@ -62,14 +64,17 @@ class Controller(object):
         for each in packages_list:
             versions_path = os.path.join(packages_path, each)
             versions_list = os.listdir(versions_path)
-            versions_list.sort()
+            versions_list.sort(key=LooseVersion)
 
             if len(versions_list) > 0:
-                body += '<a href="/packages/%(package)s/%(version)s/%(package)s-%(version)s.tar.gz">%(package)s-%(version)s</a>' % {'package': each, 'version': versions_list[-1]}
+                for version in versions_list:
+                    file_list = os.listdir(os.path.join(versions_path, version))
+                    if len(file_list)>0:
+                        body += '<a href="/packages/%(package)s/%(version)s/%(file)s">%(package)s-%(version)s</a><br/>' % {'package': each, 'version': version, 'file': file_list[-1]}
 
         body += '</body></html>'
 
-        return body.encode('utf8')
+        return body
 
     def package(self, request, package):
         package = package.lower()
@@ -86,8 +91,7 @@ class Controller(object):
             return return404(request)
 
         if os.path.exists(package_path):
-            body = '<html><body><a href="/packages/%(package)s/%(version)s/%(package)s-%(version)s.tar.gz">%(package)s-%(version)s.tar.gz</a></body></html>' % {'package': package, 'version': versions[-1]}
-            return body.encode('utf8')
+            return '<html><body><a href="/packages/%(package)s/%(version)s/%(package)s-%(version)s.tar.gz">%(package)s-%(version)s.tar.gz</a></body></html>' % {'package': package, 'version': versions[-1]}
 
         else:
             return return404(request)
@@ -98,8 +102,7 @@ class Controller(object):
         path = get_package_path(package, version, want_file=True)
 
         if os.path.exists(path):
-            body = '<html><body><a href="/packages/%(package)s/%(version)s/%(package)s-%(version)s.tar.gz">%(package)s-%(version)s.tar.gz</a></body></html>' % {'package': package, 'version': version}
-            return body.encode('utf8')
+            return '<html><body><a href="/packages/%(package)s/%(version)s/%(package)s-%(version)s.tar.gz">%(package)s-%(version)s.tar.gz</a></body></html>' % {'package': package, 'version': version}
 
         else:
             return return404(request)
